@@ -128,4 +128,92 @@ def get_news():
 @st.cache_data(ttl=1800)
 def get_ai_summary(news_list, current_date, btc_price):
     if not model:
-        return "AI 모델이 정상적으로 연결되지 않아 요약을 제공할 수 없습니다
+        return "AI 모델이 정상적으로 연결되지 않아 요약을 제공할 수 없습니다."
+        
+    if not news_list:
+        return "뉴스를 불러오지 못했습니다."
+    
+    titles = [f"- [{news['ticker']}] {news['title']}" for news in news_list[:10]]
+    
+    prompt = f"""
+    오늘은 {current_date}이야. 
+    현재 가상자산 시장의 실제 비트코인(BTC) 실시간 가격은 {btc_price:,}달러 부근에서 거래되고 있어. (과거 기사 인용 금지)
+    
+    다음은 미국 증시 최신 영문 기사 제목들이야. 이 자료들과 현재 비트코인 시황({btc_price:,}달러선)을 바탕으로, 국내 투자자들을 위한 {current_date} 글로벌 증시 브리핑을 딱 3줄로 알기 쉽게 요약해줘. 
+    시장의 주요 상승 또는 하락 원인을 명확히 포함해줘. (마크다운 불릿 포인트 활용)
+    
+    기사 제목 목록:
+    """ + "\n".join(titles)
+    
+    try:
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        return f"🚨 진짜 에러 원인: {str(e)}"
+
+# ==========================================
+# 화면 출력 (렌더링) 부분 시작
+# ==========================================
+
+news_data = get_news()
+current_btc_price = get_crypto_price()
+top10_data = get_top10_data() 
+
+if len(news_data) == 0:
+    st.error("뉴스를 불러오고 있습니다. 잠시 후 새로고침(F5)을 눌러주세요.")
+else:
+    # 1. AI 3줄 브리핑
+    st.subheader("🤖 제미나이 AI의 현재 증시 3줄 브리핑")
+    with st.info(f"✅ {today_str} 한국 시간 오전 6시 장 마감 시황 및 최근 24시간 속보를 종합 분석한 결과입니다."):
+        st.markdown(get_ai_summary(news_data, today_str, current_btc_price))
+    
+    st.markdown("---")
+    
+    # 2. 주요 기술주 실시간 시세 표 (자동 순위 변동 완벽 반영)
+    st.subheader("📊 주요 기술주 실시간 시세 (시총 상위)")
+    
+    if top10_data:
+        html_table = "<table style='width:100%; border-collapse: collapse; text-align: right; font-size: 16px;'>"
+        html_table += "<thead><tr style='border-bottom: 2px solid rgba(128,128,128,0.3);'>"
+        html_table += "<th style='text-align: left; padding: 10px;'>종목명</th>"
+        html_table += "<th style='padding: 10px;'>현재가</th>"
+        html_table += "<th style='padding: 10px;'>등락</th>"
+        html_table += "<th style='padding: 10px;'>등락률</th>"
+        html_table += "</tr></thead><tbody>"
+        
+        for item in top10_data:
+            if item['등락'] > 0:
+                color = "#ff4b4b" # 상승: 빨간색
+                sign = "+"
+            elif item['등락'] < 0:
+                color = "#1e88e5" # 하락: 파란색
+                sign = ""
+            else:
+                color = "gray"    # 보합: 회색
+                sign = ""
+                
+            price_str = f"${item['현재가']:,.2f}"
+            change_str = f"{sign}{item['등락']:,.2f}"
+            pct_str = f"{sign}{item['등락률']:.2f}%"
+            
+            html_table += "<tr style='border-bottom: 1px solid rgba(128,128,128,0.1);'>"
+            html_table += f"<td style='text-align: left; padding: 10px; font-weight: bold;'>{item['종목명']}</td>"
+            html_table += f"<td style='padding: 10px; color: {color}; font-weight: bold;'>{price_str}</td>"
+            html_table += f"<td style='padding: 10px; color: {color};'>{change_str}</td>"
+            html_table += f"<td style='padding: 10px; color: {color};'>{pct_str}</td>"
+            html_table += "</tr>"
+            
+        html_table += "</tbody></table>"
+        
+        st.markdown(html_table, unsafe_allow_html=True)
+    else:
+        st.warning("종가 데이터를 불러오지 못했습니다.")
+        
+    st.markdown("---")
+    
+    # 3. 뉴스 기사 타임라인
+    for news in news_data:
+        st.subheader(f"[{news['ticker']}] {news['title']}")
+        st.caption(f"🕒 {news['time']} | ✍ {news['publisher']}")
+        st.markdown(f"[👉 뉴스 원문 보러가기]({news['link']})")
+        st.markdown("---")
