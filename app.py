@@ -193,8 +193,8 @@ else:
             """
         html_table += "</tbody></table>"
         
-        # HTML 렌더링으로 스트림릿 화면에 표출
-        st.markdown(html_table, unsafe_allow_html=True)
+      # HTML 코드가 화면에 그대로 노출되는 현상 방지 및 렌더링 강제 적용
+        st.write(html_table, unsafe_allow_html=True)
     else:
         st.warning("종가 데이터를 불러오지 못했습니다.")
         
