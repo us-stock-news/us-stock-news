@@ -36,21 +36,19 @@ st.markdown("---")
 # 실시간 속보를 모니터링할 관심 종목
 tickers = ["QQQ", "SPY", "AAPL", "MSFT", "NVDA", "COIN"]
 
-# 날짜 자동 계산
+# 날짜 자동 계산 (세계 표준시 + 9시간 = 한국 시간)
 kst_now = datetime.utcnow() + timedelta(hours=9)
 today_str = kst_now.strftime("%Y년 %m월 %d일")
 
-# [신규 추가] 나스닥 시총 상위 10개 종목 데이터 가져오기 (종가, 등락, 등락률 계산)
+# 나스닥 시총 상위 10개 종목 데이터 가져오기 (종가, 등락, 등락률 계산)
 @st.cache_data(ttl=1800)
 def get_top10_data():
-    # 나스닥 시가총액 상위 10대 테크 기업
     top10_tickers = ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "AVGO", "TSLA", "COST", "NFLX"]
     data_list = []
     
     for t in top10_tickers:
         try:
             stock = yf.Ticker(t)
-            # 최근 5일 데이터를 불러와 휴장일/주말 이슈 방지
             hist = stock.history(period="5d") 
             if len(hist) >= 2:
                 curr_price = hist['Close'].iloc[-1]
@@ -68,6 +66,7 @@ def get_top10_data():
             pass
     return data_list
 
+# 가상자산 실시간 시세 가져오기
 def get_crypto_price():
     try:
         url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&contract_addresses=&vs_currencies=usd"
@@ -76,6 +75,7 @@ def get_crypto_price():
     except:
         return 61250 
 
+# 구글 뉴스 수집
 @st.cache_data(ttl=600)
 def get_news():
     all_news = []
@@ -108,6 +108,7 @@ def get_news():
     all_news.sort(key=lambda x: x["timestamp"], reverse=True)
     return all_news[:30]
 
+# 제미나이 AI 요약
 @st.cache_data(ttl=1800)
 def get_ai_summary(news_list, current_date, btc_price):
     if not model:
@@ -134,40 +135,36 @@ def get_ai_summary(news_list, current_date, btc_price):
     except Exception as e:
         return f"🚨 진짜 에러 원인: {str(e)}"
 
-# 데이터 수집 실행
+# ==========================================
+# 화면 출력 (렌더링) 부분 시작
+# ==========================================
+
 news_data = get_news()
 current_btc_price = get_crypto_price()
-top10_data = get_top10_data() # 시총 상위 10개 데이터 수집
+top10_data = get_top10_data() 
 
 if len(news_data) == 0:
     st.error("뉴스를 불러오고 있습니다. 잠시 후 새로고침(F5)을 눌러주세요.")
 else:
-    # 1. AI 3줄 브리핑 단락
+    # 1. AI 3줄 브리핑
     st.subheader("🤖 제미나이 AI의 현재 증시 3줄 브리핑")
     with st.info(f"✅ {today_str} 한국 시간 오전 6시 장 마감 시황 및 최근 24시간 속보를 종합 분석한 결과입니다."):
         st.markdown(get_ai_summary(news_data, today_str, current_btc_price))
     
     st.markdown("---")
     
-    # 2. [완전 개편] 주요 기술주 종가 (빨강/파랑 색상 적용 표)
+    # 2. 주요 기술주 종가 표 (HTML 에러 완벽 해결)
     st.subheader("📊 주요 기술주 종가 (나스닥 시총 상위)")
     
     if top10_data:
-        # 표의 헤더 부분 생성
-        html_table = """
-        <table style="width:100%; border-collapse: collapse; text-align: right; font-size: 16px;">
-            <thead>
-                <tr style="border-bottom: 2px solid rgba(128,128,128,0.3);">
-                    <th style="text-align: left; padding: 10px;">종목명</th>
-                    <th style="padding: 10px;">현재가</th>
-                    <th style="padding: 10px;">등락</th>
-                    <th style="padding: 10px;">등락률</th>
-                </tr>
-            </thead>
-            <tbody>
-        """
+        html_table = "<table style='width:100%; border-collapse: collapse; text-align: right; font-size: 16px;'>"
+        html_table += "<thead><tr style='border-bottom: 2px solid rgba(128,128,128,0.3);'>"
+        html_table += "<th style='text-align: left; padding: 10px;'>종목명</th>"
+        html_table += "<th style='padding: 10px;'>현재가</th>"
+        html_table += "<th style='padding: 10px;'>등락</th>"
+        html_table += "<th style='padding: 10px;'>등락률</th>"
+        html_table += "</tr></thead><tbody>"
         
-        # 데이터 한 줄씩 넣으면서 색상 조건 부여
         for item in top10_data:
             if item['등락'] > 0:
                 color = "#ff4b4b" # 상승: 빨간색
@@ -183,24 +180,22 @@ else:
             change_str = f"{sign}{item['등락']:,.2f}"
             pct_str = f"{sign}{item['등락률']:.2f}%"
             
-            html_table += f"""
-            <tr style="border-bottom: 1px solid rgba(128,128,128,0.1);">
-                <td style="text-align: left; padding: 10px; font-weight: bold;">{item['종목명']}</td>
-                <td style="padding: 10px; color: {color}; font-weight: bold;">{price_str}</td>
-                <td style="padding: 10px; color: {color};">{change_str}</td>
-                <td style="padding: 10px; color: {color};">{pct_str}</td>
-            </tr>
-            """
+            html_table += "<tr style='border-bottom: 1px solid rgba(128,128,128,0.1);'>"
+            html_table += f"<td style='text-align: left; padding: 10px; font-weight: bold;'>{item['종목명']}</td>"
+            html_table += f"<td style='padding: 10px; color: {color}; font-weight: bold;'>{price_str}</td>"
+            html_table += f"<td style='padding: 10px; color: {color};'>{change_str}</td>"
+            html_table += f"<td style='padding: 10px; color: {color};'>{pct_str}</td>"
+            html_table += "</tr>"
+            
         html_table += "</tbody></table>"
         
-      # HTML 코드가 화면에 그대로 노출되는 현상 방지 및 렌더링 강제 적용
-        st.write(html_table, unsafe_allow_html=True)
+        st.markdown(html_table, unsafe_allow_html=True)
     else:
         st.warning("종가 데이터를 불러오지 못했습니다.")
         
     st.markdown("---")
     
-    # 3. 뉴스 기사 단락
+    # 3. 뉴스 기사 타임라인
     for news in news_data:
         st.subheader(f"[{news['ticker']}] {news['title']}")
         st.caption(f"🕒 {news['time']} | ✍️ {news['publisher']}")
