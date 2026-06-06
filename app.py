@@ -43,7 +43,7 @@ today_str = kst_now.strftime("%Y년 %m월 %d일")
 # 나스닥 시총 상위 10개 종목 데이터 가져오기 (종가, 등락, 등락률 계산)
 @st.cache_data(ttl=1800)
 def get_top10_data():
-    top10_tickers = ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "AVGO", "TSLA", "COST", "NFLX"]
+    top10_tickers = ["NVDA", "AAPL", "GOOGL", "MSFT", "AMZN", "TSM", "AVGO", "META", "TSLA", "AMD""]
     data_list = []
     
     for t in top10_tickers:
