@@ -40,7 +40,7 @@ def get_news():
     for ticker in tickers:
         try:
             # 장 마감(오전 6시) 전후의 마감 종합 기사(close, wrap, summary)와 핵심 뉴스를 포괄하여 수집
-            url = f"https://news.google.com/rss/search?q={ticker}+stock+news+OR+close+OR+summary&hl=en-US&gl=US&ceid=US:en"
+            url = url = f"https://news.google.com/rss/search?q={ticker}+news+when:1d&hl=en-US&gl=US&ceid=US:en"
             feed = feedparser.parse(url)
             for entry in feed.entries[:5]:
                 parsed_time = entry.published_parsed
