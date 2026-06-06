@@ -8,7 +8,7 @@ st.set_page_config(page_title="미국 증시 실시간 뉴스", page_icon="📈"
 # API 키 설정
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-pro')
 except Exception as e:
     st.error(f"API 키 설정 에러: {e}")
 
