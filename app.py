@@ -169,7 +169,11 @@ else:
     st.markdown("---")
     
     # 2. [업그레이드] 주요 기술주 실시간 시세 표 (동적 날짜 및 시간 추가)
-    st.subheader(f"📊 주요 기술주 실시간 시세 (시총 상위) ⏱ {realtime_str} 기준")
+    st.subheader("📊 주요 기술주 실시간 시세 (시총 상위)")
+    
+    # 현재 시간(시:분) 계산 및 작은 회색 글씨(caption)로 분리 출력
+    kst_now_time = (datetime.utcnow() + timedelta(hours=9)).strftime("%H:%M")
+    st.caption(f"⏱ {today_str} {kst_now_time} 업데이트 기준")
     
     if top10_data:
         html_table = "<table style='width:100%; border-collapse: collapse; text-align: right; font-size: 16px;'>"
