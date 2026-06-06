@@ -36,28 +36,27 @@ st.markdown("---")
 # 실시간 속보를 모니터링할 관심 종목
 tickers = ["QQQ", "SPY", "AAPL", "MSFT", "NVDA", "COIN"]
 
-# 날짜 자동 계산 (세계 표준시 + 9시간 = 한국 시간)
+# 날짜 및 시간 자동 계산 (세계 표준시 + 9시간 = 한국 시간)
 kst_now = datetime.utcnow() + timedelta(hours=9)
 today_str = kst_now.strftime("%Y년 %m월 %d일")
+# [추가됨] 실시간 시세 표기를 위한 분 단위 시간 포맷 생성
+realtime_str = kst_now.strftime("%Y년 %m월 %d일 %H:%M")
 
-# [완전 자동화] 빅테크 후보들의 실시간 시가총액을 비교하여 상위 10개를 정렬 및 수집
-@st.cache_data(ttl=1800) # 30분마다 시총 순위 재계산 및 주가 갱신
+# 빅테크 후보들의 실시간 시가총액을 비교하여 상위 10개를 정렬 및 수집
+@st.cache_data(ttl=1800)
 def get_top10_data():
-    # 시총 상위 10위에 언제든 진입 가능한 글로벌 핵심 빅테크 후보 풀 (16개 종목)
     candidates = ["NVDA", "AAPL", "MSFT", "GOOGL", "AMZN", "TSM", "AVGO", "META", "TSLA", "AMD", "NFLX", "COST", "ASML", "ORCL", "CRM", "QCOM"]
     
     pool = []
     for t in candidates:
         try:
             stock = yf.Ticker(t)
-            # fast_info를 활용해 서버 지연 없이 실시간 시가총액 데이터를 획득합니다.
             mcap = stock.fast_info.market_cap
             if mcap > 0:
                 pool.append({"ticker": t, "mcap": mcap})
         except:
             pass
             
-    # 시가총액(mcap) 기준으로 내림차순 정렬 후 최종 상위 10개 종목만 컷오프
     pool.sort(key=lambda x: x["mcap"], reverse=True)
     top10_tickers = [item["ticker"] for item in pool[:10]]
     
@@ -169,8 +168,8 @@ else:
     
     st.markdown("---")
     
-    # 2. 주요 기술주 실시간 시세 표 (자동 순위 변동 완벽 반영)
-    st.subheader("📊 주요 기술주 실시간 시세 (시총 상위)")
+    # 2. [업그레이드] 주요 기술주 실시간 시세 표 (동적 날짜 및 시간 추가)
+    st.subheader(f"📊 주요 기술주 실시간 시세 (시총 상위) ⏱ {realtime_str} 기준")
     
     if top10_data:
         html_table = "<table style='width:100%; border-collapse: collapse; text-align: right; font-size: 16px;'>"
@@ -214,6 +213,6 @@ else:
     # 3. 뉴스 기사 타임라인
     for news in news_data:
         st.subheader(f"[{news['ticker']}] {news['title']}")
-        st.caption(f"🕒 {news['time']} | ✍ {news['publisher']}")
+        st.caption(f"🕒 {news['time']} | ✍️ {news['publisher']}")
         st.markdown(f"[👉 뉴스 원문 보러가기]({news['link']})")
         st.markdown("---")
